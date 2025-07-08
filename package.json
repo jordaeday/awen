@@ -3,12 +3,13 @@
   "version": "1.0.0",
   "main": "index.js",
   "scripts": {
+    "start": "node index.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],
   "author": "jordaeday",
   "license": "ISC",
-  "description": "",
+  "description": "A CLI for checking downtime of websites using Pushbullet notifications.",
   "dependencies": {
     "axios": "^1.10.0",
     "dotenv": "^17.1.0"
