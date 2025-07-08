@@ -87,7 +87,7 @@ For long-term use, you should run this script with a process manager like pm2 to
 npm install pm2 -g
 
 # Start the notifier with pm2, passing arguments
-pm2 start index.js --name "website-monitor" -- --url="https://yoursite.com" --apiKey="o.YOUR_KEY"
+pm2 start index.js --name "website-monitor" --url="https://example.com" --apiKey="o.YOUR_KEY"
 ```
 ### As a Library
 
@@ -97,5 +97,5 @@ const { startMonitoring } = require('./index');
 
 // Note: The Pushbullet API key must be set as an environment variable
 // or passed directly to the startMonitoring function if you modify it.
-startMonitoring('https://my-other-website.com', 60000);
+startMonitoring('https://example.com', 60000);
 ```
