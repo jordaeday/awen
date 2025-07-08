@@ -3,22 +3,22 @@
 A simple, backend-only Node.js package to monitor a specific website for downtime. If the site becomes unreachable, it sends a notification using the Pushbullet service.
 ## Features
 
-    Continuous Monitoring: Periodically checks a target URL to ensure it's online.
+- Continuous Monitoring: Periodically checks a target URL to ensure it's online.
 
-    Stateful Notifications: Sends a notification only when the site's status changes (i.e., when it first goes down and when it first comes back up) to avoid spam.
+- Stateful Notifications: Sends a notification only when the site's status changes (i.e., when it first goes down and when it first comes back up) to avoid spam.
 
-    Pushbullet Integration: Leverages Pushbullet for reliable push notifications to your devices.
+- Pushbullet Integration: Leverages Pushbullet for reliable push notifications to your devices.
 
-    Flexible Configuration: Configure via command-line arguments or environment variables.
+- Flexible Configuration: Configure via command-line arguments or environment variables.
 
-    Lightweight: No front-end, designed to run as a background service.
+- Lightweight: No front-end, designed to run as a background service.
 
 ## Setup
 ### 1. Prerequisites
 
-    Node.js (v14 or later)
+- Node.js (v14 or later)
 
-    A Pushbullet account
+- A Pushbullet account
 
 ### 2. Installation
 
@@ -28,11 +28,11 @@ npm install
 ```
 ### 3. Get Your Pushbullet API Key
 
-    Go to your Pushbullet Account Settings page: https://www.pushbullet.com/#settings/account
+1. Go to your Pushbullet Account Settings page: https://www.pushbullet.com/#settings/account
 
-    Scroll down to "Access Tokens" and click "Create Access Token".
+2. Scroll down to "Access Tokens" and click "Create Access Token".
 
-    Copy this token. This is your API key.
+3. Copy this token. This is your API key.
 
 ### 4. Configuration
 
@@ -72,13 +72,13 @@ CHECK_INTERVAL_MS="300000"
 Once configured, you can start the monitoring script directly from your terminal.
 
 #### Using .env file:
-
+```
 npm start
-
+```
 #### Using command-line arguments:
-
+```
 node index.js --url="https://example.com" --apiKey="o.YOUR_KEY"
-
+```
 For long-term use, you should run this script with a process manager like pm2 to ensure it runs continuously in the background.
 
 #### Example with pm2:
