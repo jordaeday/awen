@@ -1,0 +1,16 @@
+{
+    "urlToWatch": "",
+    "checkIntervalMs": 60000,
+    "notifiers": [
+        {
+            "type": "pushbullet",
+            "enabled": false,
+            "apiKey": ""
+        },
+        {
+            "type": "discord",
+            "enabled": false,
+            "webhookUrl": ""
+        }
+    ]
+}

@@ -1,44 +1,82 @@
 const axios = require('axios');
-const yargs = require('yargs/yargs');
-const { hideBin } = require('yargs/helpers');
+const fs = require('fs');
+const path = require('path');
 require('dotenv').config(); // Loads environment variables from a .env file
 
-// ARG PARSING
-const argv = yargs(hideBin(process.argv))
-    .option('url', {
-        alias: 'u',
-        type: 'string',
-        description: 'The full URL of the website to monitor'
-    })
-    .option('apiKey', {
-        alias: 'k',
-        type: 'string',
-        description: 'Your Pushbullet API Key'
-    })
-    .option('interval', {
-        alias: 'i',
-        type: 'number',
-        description: 'The check interval in milliseconds'
-    })
-    .argv;
-
 // CONFIG
-const API_KEY = argv.apiKey || process.env.PUSHBULLET_API_KEY;
-const URL_TO_WATCH = argv.url || process.env.URL_TO_WATCH;
-const CHECK_INTERVAL_MS = parseInt(argv.interval || process.env.CHECK_INTERVAL_MS, 10) || 300000; // Default to 5 minutes
+// Load config.json
+const configPath = path.join(__dirname, 'config.json');
+let config = {};
+try {
+    config = JSON.parse(fs.readFileSync(configPath, 'utf-8'));
+} catch (err) {
+    console.error('Could not read config.json:', err.message);
+    return;
+}
+
+// Add values from environment variables if they exist
+if (process.env.URL_TO_WATCH) {
+    config.urlToWatch = process.env.URL_TO_WATCH;
+}
+if (process.env.CHECK_INTERVAL_MS) {
+    const interval = parseInt(process.env.CHECK_INTERVAL_MS, 10);
+    if (!isNaN(interval) && interval > 0) {
+        config.checkIntervalMs = interval;
+    } else {
+        console.error('Invalid CHECK_INTERVAL_MS in environment variables. It should be a positive number.');
+        return;
+    }
+}
+if (process.env.NOTIFIERS) {
+    try {
+        const notifiers = JSON.parse(process.env.NOTIFIERS);
+        if (typeof notifiers === 'object') {
+            for (const key of Object.keys(notifiers)) {
+                notifiers[key].enabled = true;
+            }
+            config.notifiers = notifiers;
+        } else {
+            console.error('Invalid NOTIFIERS in environment variables. It should be a JSON object.');
+            return;
+        }
+    } catch (err) {
+        console.error('Error parsing NOTIFIERS from environment variables:', err.message);
+        return;
+    }
+}
 
 // VALIDATION
-if (!API_KEY) {
-    console.error("FATAL ERROR: Pushbullet API Key is not defined. Provide it via the --apiKey flag or in the .env file as PUSHBULLET_API_KEY.");
-    process.exit(1);
+// Validate URL_TO_WATCH
+const URL_TO_WATCH = config.urlToWatch || 'https://example.com';
+if (typeof URL_TO_WATCH !== 'string' || !URL_TO_WATCH.startsWith('http')) {
+    console.error('Invalid URL_TO_WATCH in config.json. Please provide a valid URL.');
+    return;
 }
-if (!URL_TO_WATCH) {
-    console.error("FATAL ERROR: URL to watch is not defined. Provide it via the --url flag or in the .env file as URL_TO_WATCH.");
-    process.exit(1);
+// Validate CHECK_INTERVAL_MS
+const CHECK_INTERVAL_MS = config.checkIntervalMs || 60000; // Default to 60 seconds
+if (typeof CHECK_INTERVAL_MS !== 'number' || CHECK_INTERVAL_MS <= 0) {
+    console.error('Invalid CHECK_INTERVAL_MS in config.json. Please provide a positive number.');
+    return;
 }
+// Validate notifiers
+if (config.notifiers && typeof config.notifiers !== 'object') {
+    console.error('Invalid notifiers configuration in config.json. It should be an object.');
+    return;
+}
+
+console.log(config);
 
 // STATE
 let isCurrentlyUp = true;
+// Determine which notifiers are enabled
+const notifiers = [];
+if (config.notifiers && typeof config.notifiers === 'object') {
+    for (const [name, settings] of Object.entries(config.notifiers)) {
+        if (settings.enabled === true) {
+            notifiers.push(name);
+        }
+    }
+}
 
 /**
  * Sends a notification via Pushbullet.
@@ -46,33 +84,15 @@ let isCurrentlyUp = true;
  * @param {string} body - The main content of the notification.
  */
 async function sendNotification(title, body) {
-    console.log('Attempting to send Pushbullet notification...');
-    try {
-        // Make a POST request directly to the Pushbullet API endpoint.
-        await axios.post('https://api.pushbullet.com/v2/pushes', {
-            type: 'note',
-            title: title,
-            body: body
-        }, {
-            headers: {
-                'Access-Token': API_KEY,
-                'Content-Type': 'application/json'
-            }
-        });
-        console.log('Pushbullet notification sent successfully!');
-    } catch (error) {
-        // Axios provides more detailed error information, which is helpful for debugging.
-        if (error.response) {
-            // The request was made and the server responded with a status code
-            // that falls out of the range of 2xx (e.g., 401 Unauthorized, 400 Bad Request)
-            console.error(`Pushbullet API Error: ${error.response.status} ${error.response.statusText}`);
-            console.error('Response data:', error.response.data);
-        } else if (error.request) {
-            // The request was made but no response was received
-            console.error('Pushbullet notification failed: No response received from server.');
-        } else {
-            // Something happened in setting up the request that triggered an Error
-            console.error('Pushbullet notification failed:', error.message);
+    console.log('Attempting to send notification via ' + notifiers.join(', '));
+
+    // Send notification to each enabled notifier
+    for (const notifier of notifiers) {
+        try {
+            const notifierModule = require(`./notifiers/${notifier}`);
+            await notifierModule.send(config.notifiers[notifier], title, body, isCurrentlyUp);
+        } catch (error) {
+            console.error(`Error sending notification via ${notifier}:`, error.message);
         }
     }
 }
